@@ -21,7 +21,9 @@ if [[ ${PV} == 9999  ]]; then
 	GRUB_BOOTSTRAP=1
 fi
 
-PYTHON_COMPAT=( python3_{9..11} )
+GRUB_AUTOGEN=1
+GRUB_AUTORECONF=1
+PYTHON_COMPAT=( python3_{8..11} )
 WANT_LIBTOOL=none
 
 if [[ -n ${GRUB_AUTOGEN} || -n ${GRUB_BOOTSTRAP} ]]; then
@@ -44,16 +46,22 @@ if [[ ${PV} != 9999 ]]; then
 		SRC_URI="mirror://gnu/${PN}/${P}.tar.xz"
 		S=${WORKDIR}/${P%_*}
 	fi
-	KEYWORDS="~amd64 ~arm ~arm64 ~ia64 ~ppc ~ppc64 ~sparc ~x86"
+	KEYWORDS="~amd64 ~arm ~arm64 ~ia64 ~ppc ~ppc64 ~riscv ~sparc ~x86"
 else
 	inherit git-r3
 	EGIT_REPO_URI="https://git.savannah.gnu.org/git/grub.git"
 fi
 
+SRC_URI+=" https://dev.gentoo.org/~floppym/dist/${P}-backports-r2.tar.xz"
+
 PATCHES=(
+	"${WORKDIR}/${P}-backports"
 	"${FILESDIR}"/gfxpayload.patch
 	"${FILESDIR}"/grub-2.02_beta2-KERNEL_GLOBS.patch
 	"${FILESDIR}"/grub-2.06-test-words.patch
+	"${FILESDIR}"/grub-2.06-grub-mkconfig-restore-umask.patch
+	"${FILESDIR}"/grub-2.06-gentpl.py-Remove-.interp-section-from-.img-files.patch
+	"${FILESDIR}"/grub-2.06-fs-ext2-ignore-checksum-seed.patch
 )
 
 DEJAVU=dejavu-sans-ttf-2.37
@@ -67,7 +75,7 @@ HOMEPAGE="https://www.gnu.org/software/grub/"
 # Includes licenses for dejavu and unifont
 LICENSE="GPL-3+ BSD MIT fonts? ( GPL-2-with-font-exception ) themes? ( CC-BY-SA-3.0 BitstreamVera )"
 SLOT="2/${PVR}"
-IUSE="device-mapper doc efiemu +fonts mount nls sdl test +themes truetype libzfs"
+IUSE="config-helper device-mapper doc efiemu +fonts mount nls sdl test +themes truetype libzfs"
 
 GRUB_ALL_PLATFORMS=( coreboot efi-32 efi-64 emu ieee1275 loongson multiboot
 	qemu qemu-mips pc uboot xen xen-32 xen-pvh )
@@ -294,6 +302,11 @@ src_install() {
 
 	# https://bugs.gentoo.org/231935
 	dostrip -x /usr/lib/grub
+
+	if use config-helper; then
+		exeinto /usr/sbin
+		doexe "${FILESDIR}"/update-grub
+	fi
 }
 
 pkg_postinst() {

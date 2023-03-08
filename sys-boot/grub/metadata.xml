@@ -10,6 +10,9 @@
 	<name>Gentoo Base System</name>
 </maintainer>
 <use>
+	<flag name="config-helper">
+		Install Debian's grub-mkconfig stub (update-grub)
+	</flag>
 	<flag name="device-mapper">
 		Enable support for device-mapper from <pkg>sys-fs/lvm2</pkg>
 	</flag>
